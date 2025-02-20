@@ -1,0 +1,22 @@
+version: "3"
+services:
+  redis:
+    image: redis:7.2.5-alpine
+    restart: always
+    container_name: redis
+    ports:
+      - 6379:6379
+    command: redis-server /usr/local/etc/redis/redis.conf --port 6379 --requirepass ABCD1234
+    volumes:
+      - ./data/redis/:/var/lib/redis/data
+      - ./data/redis/redis.conf:/usr/local/etc/redis/redis.conf
+  valkey:
+    image: valkey/valkey:7.2.7-alpine
+    restart: always
+    container_name: valkey
+    ports:
+      - 6379:6379
+    command: valkey-server /usr/local/etc/valkey/valkey.conf --port 6379
+    volumes:
+      - ./data/valkey/:/var/lib/valkey/data
+      - ./data/valkey/valkey.conf:/usr/local/etc/valkey/valkey.conf

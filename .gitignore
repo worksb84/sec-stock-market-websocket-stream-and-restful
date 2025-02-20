@@ -1,0 +1,4 @@
+cmd/*/__debug*
+cmd/*/*.exe
+/docker/data
+*.exe
