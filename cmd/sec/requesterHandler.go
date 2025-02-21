@@ -62,13 +62,6 @@ func (r *Requester) GetTicker() {
 				S:  v.Ticker,
 				E:  exchange,
 			}
-
-			r.DelayedSnapshot[v.Ticker] = &pbm.Snapshot{
-				N:  v.Name,
-				Ne: v.Name,
-				S:  v.Ticker,
-				E:  exchange,
-			}
 		}
 	}
 	r.mu.Unlock()
@@ -94,12 +87,6 @@ func (r *Requester) GetTicker() {
 			value.Hp = float64(v.PrevDay.High)
 			value.Lp = float64(v.PrevDay.Low)
 		}
-		if value, exist := r.DelayedSnapshot[v.Ticker]; exist {
-			value.Cp = float64(v.PrevDay.Close)
-			value.Op = float64(v.PrevDay.Open)
-			value.Hp = float64(v.PrevDay.High)
-			value.Lp = float64(v.PrevDay.Low)
-		}
 	}
 	r.mu.Unlock()
 	log.Println("GetTicker")
@@ -109,16 +96,6 @@ func (r *Requester) GetPrevPrice() {
 	snapshotLogs := r.GetSnapshotLogs()
 	for k, v := range snapshotLogs {
 		if value, exist := r.Snapshot[k]; exist {
-			value.C = v.C
-			value.Pcp = v.Pcp
-			value.Cp = v.Cp
-			value.Op = v.Op
-			value.Hp = v.Hp
-			value.Lp = v.Lp
-			value.Cr = v.Cr
-		}
-
-		if value, exist := r.DelayedSnapshot[k]; exist {
 			value.C = v.C
 			value.Pcp = v.Pcp
 			value.Cp = v.Cp

@@ -11,12 +11,11 @@ import (
 )
 
 type Requester struct {
-	mu              sync.RWMutex
-	Valkey          *ValkeyClient
-	Uri             string
-	ApiKey          string
-	Snapshot        map[string]*pbm.Snapshot
-	DelayedSnapshot map[string]*pbm.Snapshot
+	mu       sync.RWMutex
+	Valkey   *ValkeyClient
+	Uri      string
+	ApiKey   string
+	Snapshot map[string]*pbm.Snapshot
 }
 
 func NewRequester(
@@ -24,11 +23,10 @@ func NewRequester(
 	uri string,
 	apiKey string) *Requester {
 	return &Requester{
-		Valkey:          valkey,
-		Uri:             uri,
-		ApiKey:          apiKey,
-		Snapshot:        make(map[string]*pbm.Snapshot, 0),
-		DelayedSnapshot: make(map[string]*pbm.Snapshot, 0),
+		Valkey:   valkey,
+		Uri:      uri,
+		ApiKey:   apiKey,
+		Snapshot: make(map[string]*pbm.Snapshot, 0),
 	}
 }
 

@@ -34,41 +34,22 @@ func (r *Requester) RunSubscribe(feed polygonws.Feed, wg *sync.WaitGroup) {
 		select {
 		case <-ticker.C:
 			if r.AvailableTime(0) && r.AvailableWeekday() {
-				if feed == polygonws.DelayedBusinessFeed {
-					r.mu.RLock()
-					b, _ := json.Marshal(r.DelayedSnapshot)
+				r.mu.RLock()
+				b, _ := json.Marshal(r.Snapshot)
+				wg.Add(1)
+				go func() {
+					r.Valkey.Save("STOCK:SEC:LIST", b, wg)
+				}()
+
+				for _, value := range r.Snapshot {
+					b, _ := json.Marshal(value)
 					wg.Add(1)
 					go func() {
-						r.Valkey.Save("STOCK:SEC:DELAYED:LIST", b, wg)
+						key := fmt.Sprintf("STOCK:SEC:%s", value.S)
+						r.Valkey.Save(key, b, wg)
 					}()
-
-					for _, value := range r.DelayedSnapshot {
-						b, _ := json.Marshal(value)
-						wg.Add(1)
-						go func() {
-							key := fmt.Sprintf("STOCK:SEC:DELAYED:%s", value.S)
-							r.Valkey.Save(key, b, wg)
-						}()
-					}
-					r.mu.RUnlock()
-				} else {
-					r.mu.RLock()
-					b, _ := json.Marshal(r.Snapshot)
-					wg.Add(1)
-					go func() {
-						r.Valkey.Save("STOCK:SEC:LIST", b, wg)
-					}()
-
-					for _, value := range r.Snapshot {
-						b, _ := json.Marshal(value)
-						wg.Add(1)
-						go func() {
-							key := fmt.Sprintf("STOCK:SEC:%s", value.S)
-							r.Valkey.Save(key, b, wg)
-						}()
-					}
-					r.mu.RUnlock()
 				}
+				r.mu.RUnlock()
 			}
 		case <-c.Error():
 			return
@@ -77,54 +58,28 @@ func (r *Requester) RunSubscribe(feed polygonws.Feed, wg *sync.WaitGroup) {
 				return
 			}
 			v := out.(modelsws.EquityTrade)
-			if feed == polygonws.DelayedBusinessFeed {
-				r.mu.Lock()
-				if value, exist := r.DelayedSnapshot[v.Symbol]; exist {
-					low := value.Lp
-					high := value.Hp
+			r.mu.Lock()
+			if value, exist := r.Snapshot[v.Symbol]; exist {
+				low := value.Lp
+				high := value.Hp
 
-					if v.Price > high {
-						high = v.Price
-					}
-
-					if v.Price < low {
-						low = v.Price
-					}
-
-					value.Cp = float64(v.Price)
-					value.Hp = high
-					value.Lp = low
-					value.Cr = value.C / value.Pcp * 100
-					if value.Pcp == 0 {
-						value.Cr = 0
-					}
+				if v.Price > high {
+					high = v.Price
 				}
 
-				r.mu.Unlock()
-			} else {
-				r.mu.Lock()
-				if value, exist := r.Snapshot[v.Symbol]; exist {
-					low := value.Lp
-					high := value.Hp
-
-					if v.Price > high {
-						high = v.Price
-					}
-
-					if v.Price < low {
-						low = v.Price
-					}
-
-					value.Cp = float64(v.Price)
-					value.Hp = high
-					value.Lp = low
-					value.Cr = value.C / value.Pcp * 100
-					if value.Pcp == 0 {
-						value.Cr = 0
-					}
+				if v.Price < low {
+					low = v.Price
 				}
-				r.mu.Unlock()
+
+				value.Cp = float64(v.Price)
+				value.Hp = high
+				value.Lp = low
+				value.Cr = value.C / value.Pcp * 100
+				if value.Pcp == 0 {
+					value.Cr = 0
+				}
 			}
+			r.mu.Unlock()
 		}
 	}
 }
